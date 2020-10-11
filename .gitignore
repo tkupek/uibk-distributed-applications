@@ -1,3 +1,4 @@
 /.idea/
 **/.gradle
 **/build/
+/H01/resources/nqueensEvaluate/libs/
