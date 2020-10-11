@@ -10,3 +10,7 @@ Scalable FCs
 FC Fault tolerance, Security, Data Privacy
 FC Scheduling 
 Resource management for FCs
+
+# Fork by tkupek
+
+The fork includes additional code to solve the exercises.
