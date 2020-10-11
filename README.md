@@ -11,6 +11,6 @@ FC Fault tolerance, Security, Data Privacy
 FC Scheduling 
 Resource management for FCs
 
-# Fork by tkupek
+# Fork by Tobias Kupek
 
 The fork includes additional code to solve the exercises.
