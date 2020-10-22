@@ -6,10 +6,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class Evaluator {
-    public void runTest(int k, int n, String url) throws IOException {
+    public void runTest(int k, Map<String, Object> input, String url) throws IOException {
         FaaSInvoker faaSInvoker = new HTTPGETInvoker();
-        Map<String, Object> input = new HashMap<>();
-        input.put("n", n);
 
         System.out.printf("Starting test, %d iterations for %s\n", k, url);
         for (int i = 0; i < k; i++) {
