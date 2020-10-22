@@ -1,7 +1,7 @@
 {
   "name": "nqueens",
   "version": "2.0.0",
-  "main": "nqueens.js",
+  "main": "nqueensFaaS-manual.js",
   "dependencies": {
     "lodash": "^4.17.20"
   }
