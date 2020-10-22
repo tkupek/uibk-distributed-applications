@@ -3,3 +3,5 @@
 **/build/
 *.iml
 **/libs/
+/H02/nqueens-fractions.zip
+/H02/package-lock.json

@@ -24,14 +24,23 @@ exports.fraction = async function (ev, res) {
 }
 
 
-var args = process.argv;
-if(args.length > 2){
-    var num_queens = parseInt(args[2]);
-    var from = parseInt(args[3]);
-    var to = parseInt(args[4]);
+async function main(params) {
+    let n = parseInt(params['n'])
+    let from = parseInt(params['from'])
+    let to = parseInt(params['to'])
+    if(isNaN(n)) {
+        return {error: 'no valid parameter n provided, use with n > 0'}
+    }
+    if(isNaN(from)) {
+        return {error: 'no valid parameter from provided, use with n >= 0'}
+    }
+    if(isNaN(from)) {
+        return {error: 'no valid parameter to provided, use with to > 0'}
+    }
+
     console.log("Running for placement range ", from, " to ", to);
-    this.fraction({ params: { from: from, to: to, num_queens: num_queens } })
-        .then(console.log)
-} else {
-    console.log("USAGE: node index.js NUM_QUEENS FROM TO");
+    let result = await exports.fraction({ params: { from: from, to: to, num_queens: n } })
+    return {result: result['solutions']};
 }
+
+exports.main = main;
