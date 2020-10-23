@@ -26,7 +26,7 @@ public class Main {
         Evaluator evaluator = new Evaluator();
         try {
             Map<String, Object> input = new HashMap<>();
-            input.put("n", n);
+            input.put("num_queens", n);
             input.put("from", 0);
             input.put("to", 16777216);
 

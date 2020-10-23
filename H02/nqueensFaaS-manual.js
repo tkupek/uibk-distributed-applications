@@ -25,21 +25,21 @@ exports.fraction = async function (ev, res) {
 
 
 async function main(params) {
-    let n = parseInt(params['n'])
+    let num_queens = parseInt(params['num_queens'])
     let from = parseInt(params['from'])
     let to = parseInt(params['to'])
-    if(isNaN(n)) {
-        return {error: 'no valid parameter n provided, use with n > 0'}
+    if(isNaN(num_queens)) {
+        return {error: 'no valid parameter num_queens provided, use with num_queens > 0'}
     }
     if(isNaN(from)) {
-        return {error: 'no valid parameter from provided, use with n >= 0'}
+        return {error: 'no valid parameter from provided, use with from >= 0'}
     }
-    if(isNaN(from)) {
+    if(isNaN(to)) {
         return {error: 'no valid parameter to provided, use with to > 0'}
     }
 
     console.log("Running for placement range ", from, " to ", to);
-    let result = await exports.fraction({ params: { from: from, to: to, num_queens: n } })
+    let result = await exports.fraction({ params: { from: from, to: to, num_queens: num_queens } })
     return {result: result['solutions']};
 }
 
