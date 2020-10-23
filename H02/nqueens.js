@@ -3,10 +3,10 @@
 var external = require('./external');
 
 exports.fraction = async function (ev, res) {
-     // l name(H02-task2-nqueens-fractions) vars(n, from, to) install(lodash) require(./external.js as external)
-    from = parseInt(from);
-    to = parseInt(to);
-    num_queens = parseInt(n);
+    var from = parseInt(ev.params.from);
+    var to = parseInt(ev.params.to);
+    var num_queens = parseInt(ev.params.num_queens);
+    // l name(H02-task2-nqueens-fractions) vars(num_queens, from, to) install(lodash) require(./external.js as external, lodash as _) return(result)
     var solutions = 0;
     for(var iter = from; iter < to; iter++){
         var code = iter;
@@ -21,8 +21,8 @@ exports.fraction = async function (ev, res) {
         }
     }
     var result = { "solutions": solutions };
-    return result;
     // lend
+    return result;
 }
 
 var args = process.argv;
