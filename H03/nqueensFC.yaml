@@ -16,8 +16,8 @@ workflowBody:
           type: "number"
           source: "nqueensFC/N"
         - name: "k"
-            type: "number"
-            source: "nqueensFC/k"
+          type: "number"
+          source: "nqueensFC/k"
       dataOuts:
         - name: "workers"
           type: "number"
