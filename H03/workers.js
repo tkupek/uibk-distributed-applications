@@ -3,12 +3,10 @@
 // https://eu-gb.functions.appdomain.cloud/api/v1/web/tkupek-uibk_dev/default/H03-workers
 
 function main(params) {
-	console.log(params);
-
 	let distributor = parseInt(params.k);
 	let num_queens = parseInt(params.N);
 
-	let workers = Math.pow((num_queens/3), distributor);
+	let workers = Math.round((Math.pow((num_queens/3), distributor)));
 	let placements_total = Math.pow(num_queens,num_queens);
 	let placements_per_function = placements_total/workers;
 	let placements_from = [];
@@ -23,5 +21,3 @@ function main(params) {
 		"placements_per_function": placements_per_function
 	};
 }
-
-main({N: 9, k:2})

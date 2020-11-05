@@ -6,7 +6,7 @@ dataIns:
     source: "N"
   - name: "k"
     type: "number"
-    source: "N"
+    source: "k"
 workflowBody:
   - function:
       name: "workers"
@@ -21,19 +21,22 @@ workflowBody:
       dataOuts:
         - name: "workers"
           type: "number"
-          source: "workers"
         - name: "placements_from"
           type: "collection"
-          source: "placements_from"
         - name: "placements_per_function"
           type: "number"
-          source: "placements_per_function"
       properties:
         - name: "resource"
-          value: "js:https://eu-gb.functions.appdomain.cloud/api/v1/web/tkupek-uibk_dev/default/H03-workers"
+          value: "js:https://eu-gb.functions.appdomain.cloud/api/v1/web/tkupek-uibk_dev/default/H03-workers.json"
   - parallelFor:
       name: "ParallelFor"
       dataIns:
+        - name: "N"
+          type: "number"
+          source: "nqueensFC/N"
+          constraints:
+            - name: "distribution"
+              value: "REPLICATE(*)"
         - name: "from"
           type: "collection"
           source: "workers/placements_from"
@@ -58,7 +61,7 @@ workflowBody:
             dataIns:
               - name: "N"
                 type: "number"
-                source: "nqueensFC/N"
+                source: "ParallelFor/N"
               - name: "from"
                 type: "number"
                 source: "ParallelFor/from"
@@ -69,8 +72,8 @@ workflowBody:
               - name: "solutions"
                 type: "number"
             properties:
-              - name: "js:https://eu-gb.functions.appdomain.cloud/api/v1/web/tkupek-uibk_dev/default/H03-workers"
-                value: "js:https://eu-gb.functions.appdomain.cloud/api/v1/web/tkupek-uibk_dev/default/H03-fractionMonolithGiven"
+              - name: "resource"
+                value: "js:https://eu-gb.functions.appdomain.cloud/api/v1/web/tkupek-uibk_dev/default/H03-fractionMonolithGiven.json"
       dataOuts:
         - name: "results"
           type: "collection"
@@ -87,7 +90,7 @@ workflowBody:
           type: "number"
       properties:
         - name: "resource"
-          value: "js:https://eu-gb.functions.appdomain.cloud/api/v1/web/tkupek-uibk_dev/default/H03-reduction"
+          value: "js:https://eu-gb.functions.appdomain.cloud/api/v1/web/tkupek-uibk_dev/default/H03-reduction.json"
 dataOuts:
   - name: "solutions"
     type: "number"
