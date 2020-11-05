@@ -19,8 +19,8 @@ function main(params) {
 
 	return {
 		"workers": workers,
-		"placements from": placements_from,
-		"placements per function": placements_per_function
+		"placements_from": placements_from,
+		"placements_per_function": placements_per_function
 	};
 }
 
