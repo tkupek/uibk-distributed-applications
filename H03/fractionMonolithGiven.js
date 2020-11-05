@@ -2,6 +2,8 @@
 
 const _ = require('lodash')
 
+// https://eu-gb.functions.appdomain.cloud/api/v1/web/tkupek-uibk_dev/default/H03-fractionMonolithGiven
+
 function acceptable(num_queens, queen_rows){
     for(var i of _.range(0, num_queens)){
         for(var j of _.range(i + 1, num_queens)){

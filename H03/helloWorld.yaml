@@ -17,7 +17,7 @@ workflowBody:
           type: "string"
       properties:
         - name: "resource"
-          value: "python:https://eu-gb.functions.appdomain.cloud/REPLACE_THIS_WITH_YOUR_ENDPOINT/helloWorld.json"
+          value: "js:https://eu-gb.functions.appdomain.cloud/api/v1/web/tkupek-uibk_dev/default/H03-helloworld.json"
 dataOuts:
   - name: "message"
     type: "string"
