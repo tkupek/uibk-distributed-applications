@@ -28,6 +28,8 @@ function acceptable(num_queens, queen_rows){
   *
   */
 function main(params) {
+    console.log(params);
+
 	var from = parseInt(params.from);
     var placements_per_function = parseInt(params.placements_per_function);
     var to = from + placements_per_function;
