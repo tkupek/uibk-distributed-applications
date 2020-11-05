@@ -3,7 +3,10 @@ name: "nqueensFC"
 dataIns:
   - name: "N"
     type: "number"
-    value: "9"
+    source: "N"
+  - name: "k"
+    type: "number"
+    source: "N"
 workflowBody:
   - function:
       name: "workers"
@@ -12,6 +15,9 @@ workflowBody:
         - name: "N"
           type: "number"
           source: "nqueensFC/N"
+        - name: "k"
+            type: "number"
+            source: "nqueensFC/k"
       dataOuts:
         - name: "workers"
           type: "number"
