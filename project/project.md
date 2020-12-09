@@ -18,27 +18,39 @@ As most IoT devices, the camera does not do any preprocessing. Therefore the vid
 
 Your FC should efficiently detect at which times of the day your kid or dog appeared. It should be scalable (with number of videos) and cost-efficient (do with as few expensive tasks - Image recognition - as possible).
 
-### Input 
+### Given files 
 
-A folder of videos of that day on the storage.
+A folder of videos of that day on S3. You can store videos on IBM Object storage, as well. More videos can be used or make a copy of the existing ones in order to have at least 8 videos, one for each region / function deployment (See Homework 07).
 
-```
-└── your-video-bucket
-    ├── 1604670378.mp4
-    └── 1604670406.mp4
-```
+
+├── https://distributed-systems-materials.s3.eu-central-1.amazonaws.com/OBJR/1603365437.mp4
+
+├── https://distributed-systems-materials.s3.eu-central-1.amazonaws.com/OBJR/1603366941.mp4
+
+├── https://distributed-systems-materials.s3.eu-central-1.amazonaws.com/OBJR/1603376072.mp4
+
+├── https://distributed-systems-materials.s3.eu-central-1.amazonaws.com/OBJR/1603377206.mp4
+
+├── https://distributed-systems-materials.s3.eu-central-1.amazonaws.com/OBJR/1603379182.mp4
+
+├── https://distributed-systems-materials.s3.eu-central-1.amazonaws.com/OBJR/1603379635.mp4
+
+└── https://distributed-systems-materials.s3.eu-central-1.amazonaws.com/OBJR/1603380451.mp4
+
+Credit: [The Fletchers - YouTube](https://www.youtube.com/channel/UCOaIS5-uqsnXih19vIuNLmQ)
+
 
 
 ### Rough steps 
 
 * Extract frames (every 0.5 second) from the videos and store them as images to storage (AWS S3 / IBM Cloud Object Storage). 
 * Between each two subsequent images, check if there is a significant delta (something happening). 
-* Use AWS Rekognition to detect dogs or kids on those
+* Use AWS Rekognition to detect dogs or kids on those images.
 * Output when either appeared on the porch that day as human sentence (string).
 
 
+<!---
 ## MS2 (17.12.2020): Develop the FC with AFCL
-
 
 Develop the preliminary FC with AFCL. 
 
@@ -54,15 +66,38 @@ Put together the FC using the FC editor, AFCL Java API, or the YAML editor. The 
 
 Create empty functions that just produce the data how you specified with AFCL. Run the FC with these functions with the *xAFCL* Enactment Engine.
 
+-->
+
+## MS2 (17.12.2020): Analyze the given FC with AFCL
+
+The given FC receives three inputs:
+- folderVideos, where the input videos are stored. For the given videos, the folder will be "https://distributed-systems-materials.s3.eu-central-1.amazonaws.com/OBJR/".
+- folderFrames, where the frames of each video will be stored. The idea is that when you run on multiple regions, to store images on the closer storage. Replace f1, f2, ..., f8 with the folders of the corresponding regions in the input. 
+- threshold for the confidence
+
 
 ## MS3 (07.01.2021, Homework 06): Code the functions + deploy them on across ultiple regions with a Terraform script
 
+Details will be given with Homework 06.
 
-### Rough functions
 
-#### Frame extractor `Storage (S3 / Object Storage)` - `Python`
+### Functions
 
-This function should load a `.mp4` from the storage, extract frames (every 0.5 second) as image using OpenCV and store the images to the storage. 
+#### Count Videos (`countVideos`)
+
+This function should count how many videos are stored in the given folder and read their names (locations). 
+
+The idea is to keep the information about the folder and return names of each video in order to reduce the size of dataOuts, because of two reasons (reduce the data transfer and limitations of the data input and output size). 
+
+The function returns the number of all videos and their names (videos) as a collection [ "1603365437.mp4", "1603366941.mp4", ...]. The FC blocks this collection and sends a single video for each iteration of pForVideos.
+
+You do not need to output inputs specified with passing = true. 
+
+#### Frame extractor (`frameExtractor`)
+
+This function should load a `.mp4` video from the storage (folder), extract frames (every 0.5 second) as image using OpenCV and store the images to the storage in the corresponding region (folderFrames). 
+
+Since the xAFCL enactment engine does not offer support for distribution with overlap, a workaround solution is to return two collections of frames such that the second one is slided by one frame. For instance, you can store frames i=0, 1, ..., n-2 in the collection frames, while frames i=1, 2, ..., n-1 in the collection frames2.
 
 Hints:
 1. Make yourself familiar with OpenCV for Python and try it out on your local machine. 
@@ -70,7 +105,7 @@ Hints:
 1. Stick to a deterministic naming convention for everything you store to the storage, to avoid overwrites.
 
 
-#### Delta finder `Storage` - `Python`
+#### Delta finder, recognition and interpretation (`deltaFinderRekog`)
 
 This function should take images from the storage and find interesting frames by doing delta detection with OpenCV on each two subsequent frames.
 To get more reliable deltas, [smoothen](https://towardsdatascience.com/types-of-convolution-kernels-simplified-f040cb307c37) the images with [`filter2D`](https://pythonexamples.org/python-opencv-image-filter-convolution-cv2-filter2d/) before you compare them. 
@@ -79,24 +114,42 @@ Hints:
 * Find a way to know which images are 'subsequent'.
 
 
-#### Recognition and Interpretation `Storage, AWS Rekognition / IBM Visual Recognition` (Python, Java, or node.js)
+<!--- #### Recognition and Interpretation `Storage, AWS Rekognition / IBM Visual Recognition` (Python, Java, or node.js)
+-->
 
-This function should use a recognition cloud service to find dogs or kids in frames that Delta finder deemed interesting.
+Further on, this function should use a recognition cloud service to find dogs or kids in frames that Delta finder deemed interesting.
 Make sure you also retain the information whether it was a dog or kid.
 
 Hints:
 * Choose an appropriate confidence threshold
 
 
-#### Grouping and Output (Python, Java, or node.js)
+#### Count kids and dogs per video (`countPerVideo`)
+
+Since the output of pForDeltas is two collections, it would be a good choice to count dogs and kids per video for two reasons:
+- do this operation concurrently for each video
+- reduce the input data size of the function outPerVideo (avoiding collection of collection)
+
+Note: 
+* In some cases, this solution could be slower
+* This approach could be more costly on AWS Lambda since AWS Lambda charges for invocations
+
+
+#### Grouping and Output (`outPerVideo`)
 
 This function should construct a human sentence that tells you when the dog or kid appeared in the shot that day. It should be [brief and relevant](https://developer.amazon.com/en-US/alexa/branding/alexa-guidelines/communication-guidelines/brand-voice). For that purpose, you will have to intelligently group by time (`'at 2pm'`), truncate if necessary (`'5 times on the afternoon'`), and so on.
 Return the sentence as string.
+
+Note: 
+* video file name contains the time of the day
 
 
 ## MS4 (21.01.2021, Homework 07)
 
 Develop the given scheduler to schedule the FC across all function deployments.
+Based on the output of the scheduler, build a CFCL file by adapting the parallelFor as you learned in Homework 04. 
+
+Details will be given with Homework 07.
 
 
 ----
@@ -122,19 +175,20 @@ This has to happen as fast as possible from when the sample arrives. Ecoli DNA i
 Your lab uses a short-read sequencer such as [Illumina MiSeq](https://www.illumina.com/systems/sequencing-platforms/miseq.html) to read ('sequence') the [basepairs](https://en.wikipedia.org/wiki/Base_pair#Examples) of the DNA. 
 
 
-### Input
+### Given files
+
+├── https://distributed-systems-materials.s3.eu-central-1.amazonaws.com/BWA/NC_000913.3-hipA7.fasta 
+
+└── reads
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;├── https://distributed-systems-materials.s3.eu-central-1.amazonaws.com/BWA/reads/hipa7_reads_R1.fastq
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└── https://distributed-systems-materials.s3.eu-central-1.amazonaws.com/BWA/reads/hipa7_reads_R2.fastq
 
 
-```
-└── your-bucket
-    ├── NC_000913.3.fasta  
-    └── reads
-        ├── hipa7_reads_R1.fastq
-        └── hipa7_reads_R2.fastq
-```
+* One [FASTA](https://genome.sph.umich.edu/wiki/FASTA) text file containing the entire DNA of Ecoli ('reference genome')
+* Two FASTQ text files (FASTA plus likelihood that reads are correct) with paired-end reads ('ABCDE' and 'EDCBA', respectively) of your Ecoli sample, obtained from the MiSeq.
 
-* A [FASTA](https://genome.sph.umich.edu/wiki/FASTA) text file containing the entire DNA of Ecoli ('reference genome')
-* A FASTQ text file (FASTA plus likelihood that reads are correct) with paired-end reads ('ABCDE' and 'EDCBA') of your Ecoli sample, obtained from the MiSeq.
 
 
 
@@ -185,17 +239,18 @@ We know that a `C` mutation at the fourth<br> position leads to brown eyes. Now 
 
 ### Hints
 
-This FC is all about file management at scale. Assume that every step (`bwa index`, `bwa aln` and so on) produces new files that the next step needs.
-Furthermore, the parallel section produces files with the same name. We left you a recommendation how to handle this [in Week B](#rough-functions-1).
+* You can at any point make `.sam` and `.bam` files much smaller by filtering out unaligned reads: `samtools view -b -F 4 file.bam/.sam > slimfile.bam/.sam`. It is idempotent.
+* This FC is all about file management at scale. Assume that every step (`bwa index`, `bwa aln` and so on) produces new files that the next step needs.
+Furthermore, the parallelFor produces files with the same name.
 
 
-## MS2 (17.12.2020): Develop the FC with AFCL
+## MS2 (17.12.2020): Analyze the given FC with AFCL
 
-
-Develop a preliminary FC with AFCL. 
 
 It helps to try out [`bwa`](http://manpages.ubuntu.com/manpages/bionic/man1/bwa.1.html) on your local machine. 
 
+<!---
+Develop a preliminary FC with AFCL. 
 Think about these things:
 
 * How to group the above algorithm into functions 
@@ -208,25 +263,50 @@ Put together the FC using the FC editor, AFCL Java API, or the YAML editor. The 
 
 Create empty functions that just produce the data how you specified with AFCL. Run the FC with these functions with the *xAFCL* Enactment Engine.
 
+-->
+
+The FC gets two types of inputs:
+- fasta, the reference genome
+- reads, R1 and R2
+- (optional) folders where to store the chunks of the split
+- number of chunks from splitting the reference genome
+
 
 ## MS3 (07.01.2021, Homework 06): Code the functions + deploy them on across ultiple regions with a Terraform script
 
+Details will be given with Homework 06.
+
+
 Make sure you can run the steps on your Laptop / PC.
 
-### Rough functions
+### Functions
 
 Serverless functions always see a fresh filesystem, but for `bwa` it's useful to have files persist.
 We recommend to write a simple abstraction that stashes & fetches the `tmp` folder to an S3/Object Storage folder for AWS Lambda functions, and thus fakes continuity between functions (at least between `bwa` steps).
 
-#### Split `Storage` 
+#### Split (`split`)
 
-This function should split the reference genome `NC_000913.3.fasta` into smaller parts. You can use any library, binary, or shell command you find online to split FASTQ or FASTA files.
+This function should create splits of the reference genome `NC_000913.3.fasta` based on the specified input chunks. Every split should be identical to the reference genome file, except that bases outside the split's window are replaced (masked) with `N` (null character).
 
-#### bwa index `Storage`
+The function gets all inputs from the FC and passes the ones that are needed for subsequent base  functions.
+
+The function outputs a collection with the file names of splitted chunks.
+
+Hints: 
+* Count characters with `wc --chars` after splitting to ensure you didn't drop any.
+
+Note:
+* You can decide whether you will store all files on the same storage as the original fasta file or you distribute to all regions. See the idea of frames distribution in project 1. 
+
+Since each instance of BWAIndex (iteration if the pFasta paralleFor) uses R1 and R2, we distribute (replicate) them with REPLICATE(*)
+
+#### bwa index (`bwaIndex`)
 
 This function should run `bwa index` on a reference genome split created previously. It creates an index to make it better searchable.
 
-#### bwa aln `Storage`
+The other dataIns are passed.
+
+#### bwa aln `bwaAlnR1` and `bwaAlnR2`
 
 Run `bwa aln` (align) for a reference genome split created previously, for both read files (5'3 and 3'5, here R1 and R2). This is the main step of `bwa`; it aligns the reads to a reference genome. It is visualized in the table above.
 
@@ -234,23 +314,38 @@ Run `bwa aln` (align) for a reference genome split created previously, for both 
 Hints:
 * 5'3 and 3'5 are directions on DNA strings, similar to 'upstream' and 'downstream' of a river. In paired-end sequencing, you read DNA from both directions (hence `hipa7_reads_R1.fastq` & `hipa7_reads_R2.fastq`). Thanks to the [structure of DNA](https://en.wikipedia.org/wiki/Directionality_(molecular_biology)), you always know what 5'3 and 3'5 is, regardless of how you look at it.
 
+Notes:
+* After `bwa index`, the following two commands (`bwa aln`) can be executed in concurrently.  
+* The proposed approach of using a parallel (parALN) is used. If you prefer, you can use a parallelFor since the same function is executed with different data.
+* Since we need fastaIndexed for `bwa sampe`, we pass it from the first section of parALN.
 
-#### bwa sampe `Storage`
+The output of both functions is the aln file, which is collected in the output of parALN, including fastaIndexed, R1, and R2.
+
+#### bwa sampe (`bwaSampe`)
 
 This function should run `bwa sampe` (**sam**-**p**aired-**e**nd) for the `.sai` pair created in the previous step (R1 and R2). This will put the aligned reads into one `.sam` file.
 
-#### samtools merge
+Notes:
+* Check the command for sampe. It requires five files, which are described as dataIns in the FC.
 
-This function should run `samtools merge` to concat the `.sam` file of each reference genome split.
+<!--- #### samtools view, index 
 
-#### samtools sort, view, index
+This function should also run `samtools view` to create a `.bam` file (compressed representation) and then `samtools index` to create a `.bam.bai` file (makes it searchable).
+-->
 
-This function should run `samtools sort` to sort the `.sam` file.
+Here the parallelFor finishes.
+
+#### samtools merge (`merge`)
+
+This function should run `samtools merge` to concat the `.bam` files of the reference genome splits.
+
+#### samtools sort, view, index (`sort`)
+
+his function should run `samtools sort` to sort the `.sam` file.
 Then, run `samtools view` to convert to a binary representation (`.bam` file).
-Then, run `samtools index` created an index `.bam.bai` file.
+Then, run `samtools index` to create an index (`.bam.bai` file).
 
-
-Keep the `.bam` and `.bam.bai` file for Week C.
+Keep `.bam` and `.bam.bai` files for visualization.
 
 
 ### Investigate with IGV
@@ -277,6 +372,10 @@ Check the gene for these two mutations. Is your Ecoli sample resistant to antibi
 ## MS4 (21.01.2021, Homework 07)
 
 Develop the given scheduler to schedule the FC across all function deployments.
+Based on the output of the scheduler, build a CFCL file by adapting the parallelFor as you learned in Homework 04. 
+
+Details will be given with Homework 07.
+
 
 
 ----
@@ -306,58 +405,62 @@ This should be done in parallel, per stock. The result should be visualised toge
 * A list of stock ticker symbols traded on some exchange.
 
 
+
 ### Rough steps
 
 * Pull commodity prices to the storage
-* Enter them into AWS Forecast
 * Forecast for the coming year for each commodity
 * Create a chart showing the past and future price of all commodities.
 
-## MS2 (17.12.2020): Develop the FC with AFCL
 
-Develop the preliminary FC with AFCL. 
+## MS2 (17.12.2020): Analyze the given FC with AFCL
 
-Think about these things:
 
-* How to group the above algorithm into functions 
-* What you can do in parallel; what is independent from each other
-* What information each function needs, how you best represent it (Storage ARNs, collections thereof, named fields)
-* How information flows between your functions
-
-Put together the FC using the FC editor, AFCL Java API, or the YAML editor. The main goal is to think about modularity and data flow. 
-
-Create empty functions that just produce the data how you specified with AFCL. Run the FC with these functions with the *xAFCL* Enactment Engine.
+The given FC receives a single collection stockTickers and the folder of a storage where to store the pulled data.
 
 
 ## MS3 (07.01.2021, Homework 06): Code the functions + deploy them on across ultiple regions with a Terraform script
 
+Details will be given with Homework 06.
 
-### Rough functions
+### Functions
 
-#### Fetch and process `Storage, API`
+#### Fetch and process (`fetchProcess`)
 
-Pull the historical daily prices of each stock in parallel to the storage. You can use [AlphaVantage](https://www.alphavantage.co/) to retrieve time series of prices.
+This function should pull the historical daily prices of each stock in parallel to the storage. You can use [AlphaVantage](https://www.alphavantage.co/) to retrieve time series of prices.
 You may have to do some processing, such as stripping unnecessary fields. It is up to you what exactly you want to predict, what pre-processing or enriching you do, how you pick related data, and so on.
 
 Hints:
 * If you want to incorporate market sentiment at that time, [this may help](https://raw.githubusercontent.com/qngapparat/sentim/master/python/qmarketin500.csv).
 
-#### Enter into Forecast `Storage, Forecast`
+The function gets the input from the FC and returns a collection of prices (locations on the storage) and how many are they. 
 
-Enter the historical data for given commodity into AWS Forecast.
+After this function, the parallelFor pTicker starts for each stock ticker.
 
-#### Start `Storage, Forecast`
+Optional: 
+* In case you download huge amount of data, you may want to distribute the data across storages in multiple regions so that other functions access data from the storage in the corresponding region. In such case, see the FC of project 1 (folderFrames).
 
-Start the forecast for given commidity, and move the results to a file on the storage. 
+#### Forecast (`Forecast`)
+
+Start the forecast for given commidity and move the results to a file on the storage. 
+
+The function gets a location of the prices and their Ticker and returns the link where the predicted prices are stored. Since we run in parallel, each instance will store a single file with predicted prices for the given Ticker.
 
 <!--Hints:
 * Since you will be generating JavaScript code, it's useful to code this function in NodeJS
 -->
-#### Process result `Storage`
 
-Fetch the result file for given commodity from the storage and prepare it for visualisation. Strip fields that you aren't interested in. Save it in a way that's easy to read for the following step.
 
-#### Create chart `Storage, charting library or API`
+
+#### Process result (`processResult`)
+
+Fetch the result file for the given commodity from the storage and prepare it for visualisation. Strip fields that you aren't interested in. Save it in a way that's easy to read for the following step.
+
+This function gets a link to the file with predicted prices and returns another link (processed predicted prices).
+
+#### Create chart (`createChart`)
+
+This function gets the list of processed predicted prices (locations) and returns a collection of locations for charts.
 
 Fetch all the result files, and create one or more charts that visualizes the past and projected price of the stocks.
 Again, you have plenty leeway what you want to do here.
@@ -370,6 +473,10 @@ Hints:
 ## MS4 (21.01.2021, Homework 07)
 
 Develop the given scheduler to schedule the FC across all function deployments.
+Based on the output of the scheduler, build a CFCL file by adapting the parallelFor as you learned in Homework 04. 
+
+Details will be given with Homework 07.
+
 
 ----
 
@@ -419,6 +526,9 @@ Create empty functions that just produce the data how you specified with AFCL. R
 
 ## MS3 (07.01.2021, Homework 06): Code the functions + deploy them on across ultiple regions with a Terraform script
 
+Details will be given with Homework 06.
+
+
 ### Rough functions
 
 #### Get passengers `Database`
@@ -452,7 +562,13 @@ Hints:
 ## MS4 (21.01.2021, Homework 07)
 
 Develop the given scheduler to schedule the FC across all function deployments.
+Based on the output of the scheduler, build a CFCL file by adapting the parallelFor as you learned in Homework 04. 
 
+Details will be given with Homework 07.
+
+
+
+<!---
 ----
 
 # Other possible topics
@@ -482,7 +598,7 @@ Develop the Genome FC on IBM [Genome](https://github.com/rosafilgueira/Mutation_
 
 Develop the Montage FC [Montage](http://montage.ipac.caltech.edu/docs/grid.html).
 
-
+-->
 
 
 ----
