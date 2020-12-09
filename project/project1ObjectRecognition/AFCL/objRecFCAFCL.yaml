@@ -118,7 +118,7 @@ workflowBody:
             value: "BLOCK(1)"
         - name: "threshold"
           type: "number"
-          source: "frameExtactor/threshold"
+          source: "frameExtractor/threshold"
           constraints:
           - name: "distribution"
             value: "REPLICATE(*)"
